@@ -1,210 +1,81 @@
 # grist-ub-mailmerge-widget
 
-Widget de publipostage avancé pour [Grist](https://www.getgrist.com?utm_source=chatgpt.com) permettant de générer des fiches, comptes-rendus ou documents institutionnels à partir des enregistrements d’une table.
+Widget de publipostage pour Grist permettant de générer des fiches à partir des enregistrements d’une table liée.
 
-Le widget propose :
+## Fonctionnalités
 
-* un système libre de mapping des champs ;
-* une mise en page configurable ;
-* un aperçu temps réel ;
-* l’export PDF ;
-* la navigation entre enregistrements ;
-* la génération multi-documents.
-
-Ce projet a été conçu initialement pour des usages de gouvernance et de pilotage institutionnel à l’université de Bordeaux, mais peut être réutilisé pour tout besoin de publipostage dans Grist.
-
----
-
-# Fonctionnalités
-
-## Mapping libre des champs
-
-Le widget permet :
-
-* d’ajouter/supprimer des sections ;
-* d’ajouter/supprimer des lignes ;
-* d’associer librement les colonnes Grist aux champs affichés ;
-* de personnaliser les libellés affichés.
-
-## Mise en page configurable
-
-Possibilité de configurer :
-
-* titre du document ;
-* sous-titre ;
-* couleurs ;
-* polices ;
-* tailles de texte ;
-* espacement vertical ;
-* taille du logo ;
-* largeur du document.
-
-## Gestion du logo
-
-Trois modes disponibles :
-
-* logo par URL ;
-* logo local importé ;
-* sans logo.
-
-## Aperçu temps réel
-
-Le document est rendu instantanément dans une prévisualisation A4.
-
-## Navigation entre enregistrements
-
-Le widget peut :
-
-* suivre la ligne active Grist ;
-* naviguer entre les enregistrements ;
-* afficher les données liées à une vue source.
-
-## Export PDF
-
-Export possible :
-
-* de la fiche courante ;
-* de plusieurs fiches dans un PDF unique ;
-* d’un PDF par enregistrement.
+* Mapping libre des champs (sections, lignes, libellés, colonnes associées).
+* Mise en page configurable (titres, couleurs, polices, tailles, espacements, logo).
+* Aperçu A4 en temps réel.
+* Navigation entre enregistrements (ligne active + précédent/suivant).
+* Export PDF de la fiche courante, de toutes les fiches, ou un fichier par enregistrement.
 
 ## Persistance des réglages
 
-Les mappings et paramètres peuvent être sauvegardés :
+Les paramètres du widget (mapping, style, structure des sections) sont sauvegardés dans le navigateur via `localStorage`.
 
-* via les options Grist (`grist.setOption`) lorsque le widget est hébergé ;
-* ou via `localStorage` dans le Custom Widget Builder.
+Cette approche évite les erreurs liées aux APIs d’options Grist dans certains contextes d’exécution de widgets par URL.
 
----
+## Intégration Grist
 
-# Captures d’écran
+Le widget utilise :
 
-*Ajouter ici vos captures du widget.*
+* `grist.ready({ requiredAccess: 'read table' })`
+* `grist.onRecord()`
+* `grist.onRecords()`
 
----
+Il ne dépend pas de `grist.onOptions`, `grist.setOption`, `grist.setOptions`, `grist.getOption`, `grist.getOptions`, `grist.docApi` ou `grist.widgetApi`.
 
-# Installation
+## Installation dans Grist
 
-## Option 1 — GitHub Pages (recommandé)
+1. Ajouter un widget personnalisé dans un document Grist.
+2. Choisir une table source.
+3. Renseigner l’URL du widget.
+4. Lier la vue pour transmettre la ligne active.
 
-1. Forker ou cloner le dépôt.
-2. Activer GitHub Pages dans :
+## Usage
 
-   * `Settings`
-   * `Pages`
-3. Choisir :
+### 1) Configurer le modèle
 
-   * Branch : `main`
-   * Folder : `/root`
-4. Récupérer l’URL GitHub Pages.
+* Ajouter/supprimer des sections.
+* Ajouter/supprimer des lignes.
+* Associer chaque ligne à une colonne Grist.
+* Personnaliser les libellés affichés.
 
-Exemple :
+### 2) Ajuster la mise en page
 
-```text
-https://mon-compte.github.io/grist-ub-mailmerge-widget/
-```
+* Définir titre et sous-titre.
+* Choisir les couleurs et polices.
+* Ajuster tailles, marges et espacements.
+* Choisir le mode logo (URL, import local, sans logo).
 
-5. Dans Grist :
+### 3) Générer et exporter
 
-   * Ajouter un widget personnalisé ;
-   * Sélectionner une table source ;
-   * Coller l’URL GitHub Pages.
+* Vérifier l’aperçu de la ligne active.
+* Naviguer entre les enregistrements.
+* Imprimer la fiche ou exporter en PDF.
 
----
-
-## Option 2 — Custom Widget Builder
-
-Le widget peut également être testé directement dans le Custom Widget Builder de Grist.
-
-Limites connues :
-
-* certaines fonctions de liaison entre vues peuvent être indisponibles ;
-* les options Grist (`setOption`, `onOptions`) peuvent être partiellement supportées ;
-* la persistance utilise alors `localStorage`.
-
----
-
-# Structure du projet
+## Structure du projet
 
 ```text
 /
 ├── index.html
 ├── widget.js
-├── README.md
-└── assets/
+└── README.md
 ```
 
----
-
-# Technologies utilisées
+## Technologies
 
 * HTML5
 * CSS3
-* JavaScript Vanilla
+* JavaScript (Vanilla)
 * API Widgets Grist
 
-API utilisée :
+## Compatibilité
 
-```html
-https://docs.getgrist.com/grist-plugin-api.js
-```
+* Grist (vue liée)
+* Navigateurs modernes (Chrome, Edge)
 
----
-
-# Fonctionnement avec Grist
-
-Le widget utilise principalement :
-
-* `grist.ready()`
-* `grist.onRecord()`
-* `grist.onRecords()`
-* `grist.setOption()`
-* `grist.onOptions()`
-
----
-
-# Roadmap
-
-## Prévu
-
-* templates multiples ;
-* export DOCX ;
-* mode paysage ;
-* pagination avancée ;
-* champs conditionnels ;
-* répétition automatique de blocs ;
-* en-têtes/pieds de page ;
-* signature électronique ;
-* thèmes prédéfinis ;
-* support markdown/rich text ;
-* images dynamiques depuis les colonnes Grist.
-
-## Idées futures
-
-* génération automatique de comptes-rendus ;
-* fusion multi-tables ;
-* publipostage emailing ;
-* export ZIP ;
-* génération batch planifiée.
-
----
-
-# Compatibilité
-
-Testé avec :
-
-* Grist SaaS ;
-* Custom Widget Builder ;
-* Chrome ;
-* Edge.
-
----
-
-# Licence
+## Licence
 
 MIT License
-
----
-
-# Auteur
-
-Projet développé par C M 
