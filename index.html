@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>grist-ub-mailmerge-widget-v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    :root {
+      --text-xs: 0.75rem;
+      --text-sm: 0.875rem;
+      --text-base: 1rem;
+      --text-xl: 1.5rem;
+      --space-1: 0.25rem;
+      --space-2: 0.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-5: 1.25rem;
+      --space-6: 1.5rem;
+      --radius-md: 0.5rem;
+      --radius-lg: 0.75rem;
+      --font-body: 'Source Sans 3', 'Segoe UI', sans-serif;
+      --font-display: 'Source Serif 4', Georgia, serif;
+      --color-bg: #f4f2ee;
+      --color-surface: #fbfaf8;
+      --color-surface-2: #ffffff;
+      --color-border: rgba(40, 37, 29, 0.14);
+      --color-text: #28251d;
+      --color-text-muted: #6c6962;
+      --color-primary: #8d1d21;
+      --color-primary-soft: rgba(141, 29, 33, 0.1);
+      --color-accent: #5f6b7a;
+      --shadow-sm: 0 1px 2px rgba(18, 18, 18, 0.06);
+      --shadow-md: 0 8px 24px rgba(18, 18, 18, 0.08);
+      --paper-width: 210mm;
+      --paper-height: 297mm;
+      --paper-padding-y: 16mm;
+      --paper-padding-x: 15mm;
+      --logo-width: 136px;
+      --logo-height: 56px;
+      --doc-title-size: 28px;
+      --section-title-size: 18px;
+      --field-label-size: 14px;
+      --field-value-size: 14px;
+      --row-gap: 8px;
+      --section-gap: 20px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      line-height: 1.35;
+    }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    img { max-width: 100%; display: block; }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(340px, 410px) 1fr;
+      min-height: 100vh;
+    }
+    .app.sidebar-hidden { grid-template-columns: 1fr; }
+    .app.sidebar-hidden .sidebar { display: none; }
+
+    .sidebar {
+      background: var(--color-surface-2);
+      border-right: 1px solid var(--color-border);
+      padding: var(--space-4);
+      overflow: auto;
+      max-height: 100vh;
+    }
+
+    .preview-area {
+      padding: var(--space-6);
+      overflow: auto;
+      min-width: 0;
+    }
+
+    .toolbar, .preview-actions, .record-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+      margin-bottom: var(--space-4);
+    }
+
+    .sidebar-title {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      line-height: 1.1;
+      margin: 0;
+    }
+    .sidebar-subtitle {
+      color: var(--color-text-muted);
+      font-size: var(--text-sm);
+      margin-top: var(--space-1);
+      margin-bottom: var(--space-4);
+    }
+
+    .panel {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: var(--space-4);
+    }
+    .panel h2 {
+      margin: 0 0 var(--space-3);
+      font-size: var(--text-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-accent);
+    }
+
+    .field { display: grid; gap: var(--space-2); margin-bottom: var(--space-3); }
+    .field:last-child { margin-bottom: 0; }
+    .field label {
+      font-size: var(--text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+      font-weight: 700;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: #fff;
+      min-height: 38px;
+      padding: 8px 10px;
+    }
+    .inline-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+    .button-row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+    .btn {
+      border: 1px solid var(--color-border);
+      background: #fff;
+      border-radius: 999px;
+      padding: 9px 13px;
+      font-size: var(--text-sm);
+      cursor: pointer;
+      min-height: 38px;
+    }
+    .btn-primary { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+    .btn-secondary { background: var(--color-primary-soft); color: var(--color-primary); border-color: rgba(141, 29, 33, 0.16); }
+
+    .section-editor {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-3);
+      margin-bottom: var(--space-3);
+      background: #fff;
+    }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+    .section-head strong { font-size: var(--text-sm); }
+    .field-row {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: var(--space-3);
+      margin-bottom: var(--space-3);
+      padding-bottom: var(--space-3);
+      border-bottom: 1px dashed rgba(40, 37, 29, 0.12);
+    }
+    .field-row:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+    .tiny-actions { display: flex; gap: var(--space-2); justify-content: flex-end; flex-wrap: wrap; }
+    .tiny-btn { border: 1px solid var(--color-border); border-radius: 999px; background: #fff; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+    .muted-note { font-size: var(--text-sm); color: var(--color-text-muted); }
+    .status { padding: var(--space-3); border-radius: var(--radius-md); background: rgba(95, 107, 122, 0.08); color: var(--color-accent); font-size: var(--text-sm); }
+
+    .paper {
+      width: min(var(--paper-width), 100%);
+      min-height: var(--paper-height);
+      margin: 0 auto 24px;
+      background: #fff;
+      box-shadow: var(--shadow-md);
+      padding: var(--paper-padding-y) var(--paper-padding-x);
+      position: relative;
+      break-after: page;
+      page-break-after: always;
+    }
+    .paper:last-child { break-after: auto; page-break-after: auto; }
+
+    .doc-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: var(--space-5);
+      margin-bottom: var(--space-6);
+      min-height: var(--logo-height);
+      width: 100%;
+    }
+    .logo-box {
+      flex: 0 0 var(--logo-width);
+      width: var(--logo-width);
+      height: var(--logo-height);
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-start;
+      overflow: hidden;
+    }
+    .logo-box img { width: 100%; height: 100%; object-fit: contain; object-position: left bottom; background: transparent; }
+    .logo-fallback {
+      width: 100%; height: 100%; border: 1px dashed rgba(40, 37, 29, 0.18); color: var(--color-text-muted);
+      display: flex; align-items: center; justify-content: center; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .doc-heading { flex: 1 1 auto; text-align: right; align-self: flex-end; padding: 0; }
+    .doc-title {
+      font-family: var(--font-display);
+      font-size: var(--doc-title-size);
+      line-height: 1;
+      color: var(--color-primary);
+      letter-spacing: 0.04em;
+      margin: 0;
+      text-transform: uppercase;
+    }
+    .doc-subtitle { margin-top: 6px; font-size: calc(var(--field-value-size) * 0.9); color: var(--color-text-muted); }
+    .doc-section { margin-top: var(--section-gap); }
+    .doc-section-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: var(--section-title-size);
+      color: var(--color-primary);
+      border-bottom: 2px solid var(--color-primary);
+      padding-bottom: 4px;
+      margin-bottom: calc(var(--row-gap) + 2px);
+    }
+    .kv-list { display: grid; gap: var(--row-gap); }
+    .kv-row { display: grid; grid-template-columns: minmax(150px, 210px) 1fr; gap: var(--space-3); align-items: start; }
+    .kv-label { font-weight: 700; font-size: var(--field-label-size); }
+    .kv-value { white-space: pre-wrap; word-break: break-word; font-size: var(--field-value-size); }
+    .placeholder { color: #9a9488; font-style: italic; }
+    #printHost { display: none; }
+
+    @media (max-width: 1100px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { border-right: none; border-bottom: 1px solid var(--color-border); max-height: none; }
+      .preview-area { padding: var(--space-4); }
+      .paper { width: 100%; min-height: auto; }
+    }
+    @media (max-width: 720px) {
+      .inline-grid, .field-row { grid-template-columns: 1fr; }
+      .doc-header { align-items: flex-start; flex-direction: column; }
+      .doc-heading { text-align: left; }
+      .kv-row { grid-template-columns: 1fr; gap: 4px; }
+    }
+
+    @page { size: A4 portrait; margin: 0; }
+    @media print {
+      html, body { width: 210mm; background: #fff; }
+      .sidebar, .preview-actions, .record-nav { display: none !important; }
+      .app { display: block; }
+      .preview-area { padding: 0; overflow: visible; }
+      .paper { width: 210mm; min-height: 297mm; box-shadow: none; margin: 0; }
+      .doc-header { display: flex !important; align-items: flex-end !important; justify-content: space-between !important; page-break-inside: avoid; break-inside: avoid; }
+      .logo-box { flex: 0 0 var(--logo-width) !important; }
+      .doc-heading { text-align: right !important; align-self: flex-end !important; }
+      #paperPreview.export-hidden { display: none !important; }
+      #printHost { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="toolbar">
+        <div>
+          <h1 class="sidebar-title">Widget publipostage UB</h1>
+          <div class="sidebar-subtitle">V2 : options persistantes, mise en page compacte, navigation, export PDF.</div>
+        </div>
+      </div>
+
+      <section class="panel">
+        <h2>Document</h2>
+        <div class="field"><label for="docTitle">Titre du document</label><input id="docTitle" type="text" value="FICHE INSTANCE"></div>
+        <div class="field"><label for="docSubtitle">Sous-titre</label><input id="docSubtitle" type="text" value="Publipostage depuis la ligne active Grist"></div>
+        <div class="inline-grid">
+          <div class="field"><label for="primaryColor">Couleur principale</label><input id="primaryColor" type="color" value="#8d1d21"></div>
+          <div class="field"><label for="accentColor">Couleur secondaire</label><input id="accentColor" type="color" value="#5f6b7a"></div>
+        </div>
+        <div class="inline-grid">
+          <div class="field"><label for="titleFont">Police titres</label><select id="titleFont"><option value="'Source Serif 4', Georgia, serif">Source Serif 4</option><option value="Georgia, serif">Georgia</option><option value="'Times New Roman', serif">Times New Roman</option><option value="Arial, sans-serif">Arial</option></select></div>
+          <div class="field"><label for="bodyFont">Police texte</label><select id="bodyFont"><option value="'Source Sans 3', 'Segoe UI', sans-serif">Source Sans 3</option><option value="Arial, sans-serif">Arial</option><option value="'Segoe UI', sans-serif">Segoe UI</option><option value="'Times New Roman', serif">Times New Roman</option></select></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Compacité</h2>
+        <div class="inline-grid">
+          <div class="field"><label for="docTitleSize">Titre document (px)</label><input id="docTitleSize" type="number" min="14" max="48" value="28"></div>
+          <div class="field"><label for="sectionTitleSize">Titre champs/sections (px)</label><input id="sectionTitleSize" type="number" min="10" max="30" value="18"></div>
+          <div class="field"><label for="fieldLabelSize">Libellés (px)</label><input id="fieldLabelSize" type="number" min="8" max="24" value="14"></div>
+          <div class="field"><label for="fieldValueSize">Contenu (px)</label><input id="fieldValueSize" type="number" min="8" max="24" value="14"></div>
+          <div class="field"><label for="rowGap">Espacement champs (px)</label><input id="rowGap" type="number" min="0" max="40" value="8"></div>
+          <div class="field"><label for="sectionGap">Espacement sections (px)</label><input id="sectionGap" type="number" min="0" max="60" value="20"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Logo UB</h2>
+        <div class="field"><label for="logoMode">Source du logo</label><select id="logoMode"><option value="url">Image par URL</option><option value="upload">Image locale embarquée</option><option value="none">Sans logo</option></select></div>
+        <div class="field" id="logoUrlField"><label for="logoUrl">URL du logo</label><input id="logoUrl" type="text" placeholder="https://.../logo-ub.png"></div>
+        <div class="field" id="logoUploadField" hidden><label for="logoFile">Fichier image</label><input id="logoFile" type="file" accept="image/*"></div>
+        <div class="inline-grid">
+          <div class="field"><label for="logoWidth">Largeur logo (px)</label><input id="logoWidth" type="number" min="40" max="520" value="136"></div>
+          <div class="field"><label for="logoHeight">Hauteur logo (px)</label><input id="logoHeight" type="number" min="20" max="240" value="56"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Sections et mappings</h2>
+        <div id="sectionsEditor"></div>
+        <div class="button-row"><button class="btn btn-secondary" id="addSectionBtn" type="button">Ajouter une section</button><button class="btn" id="resetTemplateBtn" type="button">Réinitialiser le gabarit</button></div>
+      </section>
+
+      <section class="panel">
+        <h2>État Grist</h2>
+        <div id="statusBox" class="status">Connexion en attente.</div>
+      </section>
+    </aside>
+
+    <main class="preview-area">
+      <div class="preview-actions">
+        <button class="btn" id="toggleSidebarBtn" type="button">Masquer le panneau</button>
+        <button class="btn" id="printCurrentBtn" type="button">Imprimer / PDF ligne active</button>
+        <button class="btn btn-secondary" id="printAllBtn" type="button">PDF unique multi-lignes</button>
+        <button class="btn btn-secondary" id="exportSeparateBtn" type="button">PDF séparés</button>
+      </div>
+      <div class="record-nav">
+        <button class="btn" id="prevRecordBtn" type="button">← Précédent</button>
+        <span class="preview-chip" id="recordChip">Aucune ligne</span>
+        <button class="btn" id="nextRecordBtn" type="button">Suivant →</button>
+      </div>
+      <div id="previewHost"></div>
+      <div id="printHost"></div>
+    </main>
+  </div>
+  <script src="./widget.js"></script>
+</body>
+</html>
