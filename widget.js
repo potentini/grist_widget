@@ -209,13 +209,7 @@ function saveSoon() {
 async function saveOptions() {
   collectSettingsFromControls();
   const payload = structuredCloneSafe(state.settings);
-  try {
-    if (typeof grist !== 'undefined' && grist.setOption) await grist.setOption(OPTION_KEY, payload);
-    localStorage.setItem(OPTION_KEY, JSON.stringify(payload));
-  } catch (err) {
-    localStorage.setItem(OPTION_KEY, JSON.stringify(payload));
-    console.warn('Impossible de sauvegarder dans Grist, fallback localStorage.', err);
-  }
+  localStorage.setItem(OPTION_KEY, JSON.stringify(payload));
 }
 
 function handleSettingsChanged() {
@@ -316,19 +310,14 @@ function mergeSettings(saved) {
 }
 
 function connectGrist() {
+  mergeSettings(loadFromLocalStorage());
+
   if (typeof grist === 'undefined') {
-    mergeSettings(loadFromLocalStorage());
     setStatus('Mode autonome : hors Grist. Sauvegarde locale navigateur uniquement.');
     return;
   }
 
   grist.ready({ requiredAccess: 'read table' });
-
-  grist.onOptions(options => {
-    state.suppressSave = true;
-    mergeSettings(options?.[OPTION_KEY] || loadFromLocalStorage());
-    state.suppressSave = false;
-  });
 
   grist.onRecord(record => {
     if (!record) { setStatus('Aucune ligne active sélectionnée dans Grist.'); return; }
